@@ -58,6 +58,8 @@ dependencies {
     implementation(libs.kotlin.stdlib)
     implementation(libs.ads.mobile.sdk)
     implementation(libs.protolite.well.known.types)
+    implementation(libs.play.services.fido)
+    implementation(libs.inputmapping)
     debugImplementation(libs.ui.tooling)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

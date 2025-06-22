@@ -1,7 +1,10 @@
 package com.example.todolist
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material.icons.Icons
@@ -11,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.*
 import java.util.*
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Box
 
 class MainActivity : ComponentActivity() {
@@ -43,7 +47,7 @@ class MainActivity : ComponentActivity() {
             if (showDialog) {
                 AddTask(
                     onDismiss = { showDialog = false },
-                    onSave = { title, desc, dueTime, isCompleted, notificationEnabled, category ->
+                    onSave = { title, desc, dueTime, isCompleted, notificationEnabled, category, attachments ->
                         val task = Task(
                             title = title,
                             description = desc,
@@ -51,7 +55,8 @@ class MainActivity : ComponentActivity() {
                             dueTime = dueTime,
                             isCompleted = isCompleted,
                             notificationEnabled = notificationEnabled,
-                            category = category
+                            category = category,
+                            attachments = attachments
                         )
                         dbHelper.insertTask(task)
                         showDialog = false
@@ -141,10 +146,10 @@ class MainActivity : ComponentActivity() {
                             selectedCategory = category
                         }
                         refreshTasks()
-                    }
+                    },
                 )
-
             }
         }
     }
 }
+

@@ -17,6 +17,8 @@ uiTooling = "1.6.0"
 uiToolingPreview = "1.8.3"
 adsMobileSdk = "0.17.0-alpha01"
 protoliteWellKnownTypes = "18.0.1"
+playServicesFido = "21.2.0"
+inputmapping = "1.1.1-beta"
 
 [libraries]
 androidx-activity-compose-v180 = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
@@ -43,6 +45,8 @@ ui-tooling = { module = "androidx.compose.ui:ui-tooling", version.ref = "uiTooli
 ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "uiToolingPreview" }
 ads-mobile-sdk = { group = "com.google.android.libraries.ads.mobile.sdk", name = "ads-mobile-sdk", version.ref = "adsMobileSdk" }
 protolite-well-known-types = { group = "com.google.firebase", name = "protolite-well-known-types", version.ref = "protoliteWellKnownTypes" }
+play-services-fido = { group = "com.google.android.gms", name = "play-services-fido", version.ref = "playServicesFido" }
+inputmapping = { group = "com.google.android.libraries.play.games", name = "inputmapping", version.ref = "inputmapping" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

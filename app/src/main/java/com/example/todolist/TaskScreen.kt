@@ -1,5 +1,6 @@
 package com.example.todolist
 
+import android.content.Context
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,9 +12,27 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.*
+import android.content.Intent
+import android.content.ActivityNotFoundException
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+
+fun openAttachment(context: Context, attachment: TaskAttachment) {
+    val intent = Intent(Intent.ACTION_VIEW).apply {
+        setDataAndType(attachment.uri, context.contentResolver.getType(attachment.uri))
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+
+    try {
+        context.startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        Toast.makeText(context, "Brak aplikacji do otwarcia pliku", Toast.LENGTH_SHORT).show()
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,9 +43,11 @@ fun TaskScreen(
     showCompleted: Boolean,
     onToggleShowCompleted: () -> Unit,
     selectedCategory: String,
-    onCategorySelected: (String) -> Unit
+    onCategorySelected: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var taskAttachments by remember { mutableStateOf<Task?>(null) }
+    val context = LocalContext.current
 
     val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()) }
     val availableCategories = listOf("Wszystkie") + tasks.map { it.category }.distinct().filter { it.isNotBlank() }
@@ -95,16 +116,23 @@ fun TaskScreen(
                             .padding(vertical = 8.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
                                     text = task.title,
                                     style = MaterialTheme.typography.titleLarge,
                                     modifier = Modifier.weight(1f)
                                 )
+                                if (task.attachments.isNotEmpty()) {
+                                    IconButton(
+                                        onClick = { taskAttachments = task },
+                                        modifier = Modifier.padding(start = 8.dp)
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.attachment),
+                                            contentDescription = "Załączniki"
+                                        )
+                                    }
+                                }
                                 IconButton(onClick = { onDelete(task.id) }) {
                                     Icon(Icons.Default.Delete, contentDescription = "Usuń")
                                 }
@@ -118,7 +146,12 @@ fun TaskScreen(
 
                             Text("Utworzone: ${dateFormat.format(task.creationTime)}", style = MaterialTheme.typography.labelMedium)
                             Text("Termin: ${dateFormat.format(task.dueTime)}", style = MaterialTheme.typography.labelMedium)
-                            Text("Kategoria: ${task.category}", style = MaterialTheme.typography.labelMedium)
+                            task.category.takeIf { it.isNotEmpty() }?.let { category ->
+                                Text(
+                                    text = "Kategoria: $category",
+                                    style = MaterialTheme.typography.labelMedium
+                                )
+                            }
 
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -135,5 +168,41 @@ fun TaskScreen(
                 }
             }
         }
+    }
+
+    if (taskAttachments != null) {
+        val task = taskAttachments!!
+        AlertDialog(
+            onDismissRequest = { taskAttachments = null },
+            title = { Text("Załączniki zadania \"${task.title}\"") },
+            text = {
+                Column {
+                    if (task.attachments.isEmpty()) {
+                        Text("Brak załączników")
+                    } else {
+                        task.attachments.forEach { attachment ->
+                            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                Text("Plik: ${attachment.name}")
+                                Text("URI: ${attachment.uri}", style = MaterialTheme.typography.labelSmall)
+                            }
+                            TextButton(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = {
+                                    openAttachment(context,attachment)
+                                    taskAttachments = null
+                                }
+                            ) {
+                                Text(attachment.name)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { taskAttachments = null }) {
+                    Text("Zamknij")
+                }
+            }
+        )
     }
 }
