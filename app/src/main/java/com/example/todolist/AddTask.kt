@@ -9,6 +9,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.ui.Alignment
@@ -119,21 +120,29 @@ fun AddTask(
                 Text("Załączniki (${attachments.size})")
                 Log.d("UI", "attachments w UI = ${attachments.size}")
 
-                attachments.forEach { attachment ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                    ) {
-                        Text(attachment.name, modifier = Modifier.weight(1f))
-                        IconButton(onClick = {
-                            attachments = attachments - attachment
-                        }) {
-                            Icon(Icons.Default.Delete, contentDescription = "Usuń załącznik")
+                LazyColumn (
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 200.dp)
+                ) {
+                    items(attachments.size) { index ->
+                        val attachment = attachments[index]
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                        ) {
+                            Text(attachment.name, modifier = Modifier.weight(1f))
+                            IconButton(onClick = {
+                                attachments = attachments - attachment
+                            }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Usuń załącznik")
+                            }
                         }
                     }
+
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

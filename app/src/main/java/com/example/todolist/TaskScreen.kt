@@ -180,19 +180,25 @@ fun TaskScreen(
                     if (task.attachments.isEmpty()) {
                         Text("Brak załączników")
                     } else {
-                        task.attachments.forEach { attachment ->
-                            Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                                Text("Plik: ${attachment.name}")
-                                Text("URI: ${attachment.uri}", style = MaterialTheme.typography.labelSmall)
-                            }
-                            TextButton(
-                                modifier = Modifier.fillMaxWidth(),
-                                onClick = {
-                                    openAttachment(context,attachment)
-                                    taskAttachments = null
+                        LazyColumn (
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 380.dp)
+                        ) {
+                            items(task.attachments) { attachment ->
+                                Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                                    Text("Plik: ${attachment.name}")
+                                    Text("URI: ${attachment.uri}", style = MaterialTheme.typography.labelSmall)
                                 }
-                            ) {
-                                Text(attachment.name)
+                                TextButton(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onClick = {
+                                        openAttachment(context,attachment)
+                                        taskAttachments = null
+                                    }
+                                ) {
+                                    Text(attachment.name)
+                                }
                             }
                         }
                     }
