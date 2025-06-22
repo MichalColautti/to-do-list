@@ -4,33 +4,40 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.*
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.*
-import java.util.Date
+import java.util.*
+import androidx.compose.foundation.layout.Box
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val dbHelper = TaskDatabase(this)
 
         setContent {
-            var tasks by remember { mutableStateOf(dbHelper.getAllTasks()) }
+            var tasks by remember { mutableStateOf(emptyList<Task>()) }
             var showDialog by remember { mutableStateOf(false) }
             var hideCompleted by remember { mutableStateOf(false) }
             var selectedCategory by remember { mutableStateOf("Wszystkie") }
+
+            var showMainMenu by remember { mutableStateOf(false) }
+            var showCategoryMenu by remember { mutableStateOf(false) }
 
             fun refreshTasks() {
                 tasks = dbHelper.getAllTasks().filter {
                     (!hideCompleted || !it.isCompleted) &&
                             (selectedCategory == "Wszystkie" || it.category == selectedCategory)
                 }
+            }
+
+            LaunchedEffect(Unit) {
+                refreshTasks()
             }
 
             if (showDialog) {
@@ -58,39 +65,85 @@ class MainActivity : ComponentActivity() {
             }
 
             Scaffold(
+                topBar = {
+                    TopAppBar(
+                        title = { Text("Lista toDo") },
+                        actions = {
+                            Box {
+                                IconButton(onClick = { showMainMenu = !showMainMenu }) {
+                                    Icon(Icons.Default.MoreVert, contentDescription = "Menu")
+                                }
+
+                                DropdownMenu(
+                                    expanded = showMainMenu,
+                                    onDismissRequest = { showMainMenu = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(if (hideCompleted) "Pokaż zakończone" else "Ukryj zakończone") },
+                                        onClick = {
+                                            hideCompleted = !hideCompleted
+                                            refreshTasks()
+                                            showMainMenu = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Wybierz kategorię") },
+                                        onClick = {
+                                            showCategoryMenu = true
+                                            showMainMenu = false
+                                        }
+                                    )
+                                }
+
+                                DropdownMenu(
+                                    expanded = showCategoryMenu,
+                                    onDismissRequest = { showCategoryMenu = false }
+                                ) {
+                                    allCategories.forEach { category ->
+                                        DropdownMenuItem(
+                                            text = { Text(category) },
+                                            onClick = {
+                                                selectedCategory = category
+                                                refreshTasks()
+                                                showCategoryMenu = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    )
+                },
                 floatingActionButton = {
                     FloatingActionButton(onClick = { showDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Add")
+                        Icon(Icons.Default.Add, contentDescription = "Dodaj")
                     }
                 }
             ) {
-                Column {
-                    FilterBar(
-                        hideCompleted = hideCompleted,
-                        onHideCompletedChange = {
-                            hideCompleted = it
-                            refreshTasks()
-                        },
-                        selectedCategory = selectedCategory,
-                        categories = allCategories,
-                        onCategorySelected = {
-                            selectedCategory = it
-                            refreshTasks()
+                TaskScreen(
+                    tasks = tasks,
+                    onDelete = { taskId ->
+                        dbHelper.deleteTask(taskId)
+                        refreshTasks()
+                    },
+                    onToggleComplete = { task ->
+                        dbHelper.updateTaskCompletion(task.id, !task.isCompleted)
+                        refreshTasks()
+                    },
+                    showCompleted = !hideCompleted,
+                    onToggleShowCompleted = {
+                        hideCompleted = !hideCompleted
+                        refreshTasks()
+                    },
+                    selectedCategory = selectedCategory,
+                    onCategorySelected = { category ->
+                        if (category != null) {
+                            selectedCategory = category
                         }
-                    )
+                        refreshTasks()
+                    }
+                )
 
-                    TaskScreen(
-                        tasks = tasks,
-                        onDelete = {
-                            dbHelper.deleteTask(it)
-                            refreshTasks()
-                        },
-                        onToggleComplete = {
-                            dbHelper.updateTaskCompletion(it.id ?: return@TaskScreen, !it.isCompleted)
-                            refreshTasks()
-                        }
-                    )
-                }
             }
         }
     }
