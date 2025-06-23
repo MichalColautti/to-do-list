@@ -19,6 +19,7 @@ import java.util.*
 import android.content.Intent
 import android.content.ActivityNotFoundException
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.platform.LocalContext
 
 fun openAttachment(context: Context, attachment: TaskAttachment) {
@@ -44,6 +45,7 @@ fun TaskScreen(
     onToggleShowCompleted: () -> Unit,
     selectedCategory: String,
     onCategorySelected: (String) -> Unit,
+    onTaskClick: (Task) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
     var taskAttachments by remember { mutableStateOf<Task?>(null) }
@@ -114,6 +116,7 @@ fun TaskScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp)
+                            .clickable { onTaskClick(task) }
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {

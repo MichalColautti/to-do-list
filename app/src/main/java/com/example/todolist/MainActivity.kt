@@ -121,6 +121,9 @@ class MainActivity : ComponentActivity() {
 
             val allCategories = remember { mutableStateListOf<String>() }
 
+            var selectedTask by remember { mutableStateOf<Task?>(null) }
+            var showTaskDetails by remember { mutableStateOf(false) }
+
             LaunchedEffect(tasks) {
                 val categories = listOf("Wszystkie") + dbHelper.getAllTasks()
                     .map { it.category }
@@ -298,29 +301,60 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             ) {
-                TaskScreen(
-                    tasks = tasks,
-                    onDelete = { taskId ->
-                        dbHelper.deleteTask(taskId)
-                        refreshTasks()
-                    },
-                    onToggleComplete = { task ->
-                        dbHelper.updateTaskCompletion(task.id, !task.isCompleted)
-                        refreshTasks()
-                    },
-                    showCompleted = !hideCompleted,
-                    onToggleShowCompleted = {
-                        hideCompleted = !hideCompleted
-                        refreshTasks()
-                    },
-                    selectedCategory = selectedCategory,
-                    onCategorySelected = { category ->
-                        if (category != null) {
-                            selectedCategory = category
+                if (showTaskDetails && selectedTask != null) {
+                    TaskDetailsScreen(
+                        task = selectedTask!!,
+                        onDismiss = { showTaskDetails = false },
+                        onSave = { updatedTask ->
+                            dbHelper.updateTask(updatedTask)
+                            refreshTasks()
+                            showTaskDetails = false
+
+                            if (updatedTask.notificationEnabled) {
+                                val minutesBefore = SettingsManager.getNotificationMinutes(this)
+                                val triggerTime = updatedTask.dueTime.time - minutesBefore * 60 * 1000
+
+                                if (triggerTime > System.currentTimeMillis()) {
+                                    scheduleNotification(
+                                        this,
+                                        updatedTask.id.toInt(),
+                                        updatedTask.title,
+                                        triggerTime
+                                    )
+                                }
+                            }
                         }
-                        refreshTasks()
-                    },
-                )
+                    )
+                }
+                else {
+                    TaskScreen(
+                        tasks = tasks,
+                        onDelete = { taskId ->
+                            dbHelper.deleteTask(taskId)
+                            refreshTasks()
+                        },
+                        onToggleComplete = { task ->
+                            dbHelper.updateTaskCompletion(task.id, !task.isCompleted)
+                            refreshTasks()
+                        },
+                        onTaskClick = { task ->
+                            selectedTask = task
+                            showTaskDetails = true
+                        },
+                        showCompleted = !hideCompleted,
+                        onToggleShowCompleted = {
+                            hideCompleted = !hideCompleted
+                            refreshTasks()
+                        },
+                        selectedCategory = selectedCategory,
+                        onCategorySelected = { category ->
+                            if (category != null) {
+                                selectedCategory = category
+                            }
+                            refreshTasks()
+                        },
+                    )
+                }
             }
         }
     }

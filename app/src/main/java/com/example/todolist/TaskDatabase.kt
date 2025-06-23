@@ -5,9 +5,10 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import java.util.Date
+import androidx.core.database.sqlite.transaction
 
 class TaskDatabase(context: Context) :
-    SQLiteOpenHelper(context, "tasks.db", null, 6) {
+    SQLiteOpenHelper(context, "tasks.db", null, 7) {
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("""
@@ -134,4 +135,35 @@ class TaskDatabase(context: Context) :
         cursor.close()
         return attachments
     }
+
+    fun updateTask(task: Task) {
+        val db = writableDatabase
+        db.transaction() {
+            try {
+                val values = ContentValues().apply {
+                    put("title", task.title)
+                    put("description", task.description)
+                    put("dueTime", task.dueTime.time)
+                    put("isCompleted", if (task.isCompleted) 1 else 0)
+                    put("notificationEnabled", if (task.notificationEnabled) 1 else 0)
+                    put("category", task.category)
+                }
+                update("tasks", values, "id = ?", arrayOf(task.id.toString()))
+
+                delete("attachments", "taskId = ?", arrayOf(task.id.toString()))
+
+                task.attachments.forEach { attachment ->
+                    val attachmentValues = ContentValues().apply {
+                        put("taskId", task.id)
+                        put("uri", attachment.uri.toString())
+                        put("name", attachment.name)
+                    }
+                    insert("attachments", null, attachmentValues)
+                }
+
+            } finally {
+            }
+        }
+    }
+
 }
