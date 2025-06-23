@@ -23,6 +23,13 @@ import java.util.*
 import androidx.compose.foundation.layout.Box
 import androidx.core.content.ContextCompat
 
+enum class SortOption(val label: String) {
+    DATE_ASC("Data rosnąco"),
+    DATE_DESC("Data malejąco"),
+    TITLE_ASC("Tytuł A-Z"),
+    TITLE_DESC("Tytuł Z-A")
+}
+
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.S)
     @RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
@@ -50,7 +57,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-
     @RequiresApi(Build.VERSION_CODES.S)
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -66,18 +72,29 @@ class MainActivity : ComponentActivity() {
             var tasks by remember { mutableStateOf(emptyList<Task>()) }
             var showDialog by remember { mutableStateOf(false) }
             var hideCompleted by remember { mutableStateOf(false) }
-            var selectedCategory by remember { mutableStateOf("Wszystkie") }
 
             var showMainMenu by remember { mutableStateOf(false) }
-            var showCategoryMenu by remember { mutableStateOf(false) }
 
-            
+            var showCategoryMenu by remember { mutableStateOf(false) }
+            var selectedCategory by remember { mutableStateOf("Wszystkie") }
+
+            var showSortMenu by remember { mutableStateOf(false) }
+            var selectedSortOption by remember { mutableStateOf(SortOption.DATE_ASC) }
 
             fun refreshTasks() {
-                tasks = dbHelper.getAllTasks().filter {
-                    (!hideCompleted || !it.isCompleted) &&
-                            (selectedCategory == "Wszystkie" || it.category == selectedCategory)
-                }
+                tasks = dbHelper.getAllTasks()
+                    .filter {
+                        (!hideCompleted || !it.isCompleted) &&
+                                (selectedCategory == "Wszystkie" || it.category == selectedCategory)
+                    }
+                    .sortedWith(
+                        when (selectedSortOption) {
+                            SortOption.DATE_ASC -> compareBy { it.dueTime }
+                            SortOption.DATE_DESC -> compareByDescending { it.dueTime }
+                            SortOption.TITLE_ASC -> compareBy { it.title.lowercase() }
+                            SortOption.TITLE_DESC -> compareByDescending { it.title.lowercase() }
+                        }
+                    )
             }
 
             LaunchedEffect(Unit) {
@@ -173,6 +190,13 @@ class MainActivity : ComponentActivity() {
                                         }
                                     )
                                     DropdownMenuItem(
+                                        text = { Text("Sortuj") },
+                                        onClick = {
+                                            showSortMenu = true
+                                            showMainMenu = false
+                                        }
+                                    )
+                                    DropdownMenuItem(
                                         text = { Text("Czas powiadomień") },
                                         onClick = {
                                             showNotificationMenu = true
@@ -208,6 +232,21 @@ class MainActivity : ComponentActivity() {
                                                 SettingsManager.setNotificationMinutes(context, minutes)
                                                 showNotificationMenu = false
                                                 Toast.makeText(context, "Ustawiono: $label", Toast.LENGTH_SHORT).show()
+                                            }
+                                        )
+                                    }
+                                }
+                                DropdownMenu(
+                                    expanded = showSortMenu,
+                                    onDismissRequest = { showSortMenu = false }
+                                ) {
+                                    SortOption.entries.forEach { option ->
+                                        DropdownMenuItem(
+                                            text = { Text(option.label) },
+                                            onClick = {
+                                                selectedSortOption = option
+                                                refreshTasks()
+                                                showSortMenu = false
                                             }
                                         )
                                     }
