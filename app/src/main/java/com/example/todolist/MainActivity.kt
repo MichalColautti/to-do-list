@@ -162,8 +162,15 @@ class MainActivity : ComponentActivity() {
             }
             var showNotificationMenu by remember { mutableStateOf(false) }
 
-            val allCategories = remember(tasks) {
-                listOf("Wszystkie") + tasks.map { it.category }.distinct().filter { it.isNotBlank() }
+            val allCategories = remember { mutableStateListOf<String>() }
+
+            LaunchedEffect(tasks) {
+                val categories = listOf("Wszystkie") + dbHelper.getAllTasks()
+                    .map { it.category }
+                    .distinct()
+                    .filter { it.isNotBlank() }
+                allCategories.clear()
+                allCategories.addAll(categories)
             }
 
             Scaffold(
