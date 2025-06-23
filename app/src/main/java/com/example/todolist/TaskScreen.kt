@@ -29,7 +29,7 @@ fun openAttachment(context: Context, attachment: TaskAttachment) {
 
     try {
         context.startActivity(intent)
-    } catch (e: ActivityNotFoundException) {
+    } catch (_: ActivityNotFoundException) {
         Toast.makeText(context, "Brak aplikacji do otwarcia pliku", Toast.LENGTH_SHORT).show()
     }
 }

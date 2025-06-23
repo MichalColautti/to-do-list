@@ -159,7 +159,7 @@ fun AddTask(
                 onClick = {
                     val dueDate: Date = try {
                         dateFormat.parse(dueTime) ?: Date()
-                    } catch (e: Exception) {
+                    } catch (_: Exception) {
                         Date()
                     }
                     onSave(

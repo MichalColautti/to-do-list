@@ -1,6 +1,7 @@
 package com.example.todolist
 
 import android.content.Context
+import androidx.core.content.edit
 
 object SettingsManager {
     private const val PREFS_NAME = "settings"
@@ -13,6 +14,6 @@ object SettingsManager {
 
     fun setNotificationMinutes(context: Context, minutes: Int) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putInt(NOTIFICATION_MINUTES_KEY, minutes).apply()
+        prefs.edit() { putInt(NOTIFICATION_MINUTES_KEY, minutes) }
     }
 }

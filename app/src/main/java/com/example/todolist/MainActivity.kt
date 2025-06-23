@@ -1,8 +1,6 @@
 package com.example.todolist
 
 import android.annotation.SuppressLint
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -14,7 +12,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.*
 import java.util.*
-import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Box
 
 class MainActivity : ComponentActivity() {
