@@ -71,15 +71,21 @@ class MainActivity : ComponentActivity() {
         setContent {
             var tasks by remember { mutableStateOf(emptyList<Task>()) }
             var showDialog by remember { mutableStateOf(false) }
-            var hideCompleted by remember { mutableStateOf(false) }
+            var hideCompleted by remember {
+                mutableStateOf(SettingsManager.getHideCompleted(this))
+            }
 
             var showMainMenu by remember { mutableStateOf(false) }
 
             var showCategoryMenu by remember { mutableStateOf(false) }
-            var selectedCategory by remember { mutableStateOf("Wszystkie") }
+            var selectedCategory by remember {
+                mutableStateOf(SettingsManager.getCategory(this))
+            }
 
             var showSortMenu by remember { mutableStateOf(false) }
-            var selectedSortOption by remember { mutableStateOf(SortOption.DATE_ASC) }
+            var selectedSortOption by remember {
+                mutableStateOf(SortOption.valueOf(SettingsManager.getSortOption(this)))
+            }
 
             fun refreshTasks() {
                 tasks = dbHelper.getAllTasks()
@@ -178,6 +184,7 @@ class MainActivity : ComponentActivity() {
                                         text = { Text(if (hideCompleted) "Pokaż zakończone" else "Ukryj zakończone") },
                                         onClick = {
                                             hideCompleted = !hideCompleted
+                                            SettingsManager.setHideCompleted(context, hideCompleted)
                                             refreshTasks()
                                             showMainMenu = false
                                         }
@@ -214,6 +221,7 @@ class MainActivity : ComponentActivity() {
                                             text = { Text(category) },
                                             onClick = {
                                                 selectedCategory = category
+                                                SettingsManager.setCategory(context, category)
                                                 refreshTasks()
                                                 showCategoryMenu = false
                                             }
@@ -245,6 +253,7 @@ class MainActivity : ComponentActivity() {
                                             text = { Text(option.label) },
                                             onClick = {
                                                 selectedSortOption = option
+                                                SettingsManager.setSortOption(context, option.name)
                                                 refreshTasks()
                                                 showSortMenu = false
                                             }
