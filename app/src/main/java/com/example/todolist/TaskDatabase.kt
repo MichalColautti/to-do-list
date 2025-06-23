@@ -40,7 +40,7 @@ class TaskDatabase(context: Context) :
         onCreate(db)
     }
 
-    fun insertTask(task: Task) {
+    fun insertTask(task: Task): Long {
         val db = writableDatabase
         db.beginTransaction()
 
@@ -67,6 +67,7 @@ class TaskDatabase(context: Context) :
             }
 
             db.setTransactionSuccessful()
+            return taskId
         } finally {
             db.endTransaction()
         }

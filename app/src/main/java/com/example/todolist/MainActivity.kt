@@ -1,10 +1,18 @@
 package com.example.todolist
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
+import androidx.annotation.RequiresPermission
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
@@ -13,11 +21,44 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.*
 import java.util.*
 import androidx.compose.foundation.layout.Box
+import androidx.core.content.ContextCompat
 
 class MainActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.S)
+    @RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
+    private fun scheduleNotification(context: Context, taskId: Int, taskTitle: String, triggerTime: Long) {
+        val alarmManager = ContextCompat.getSystemService(context, AlarmManager::class.java)
+
+        if (alarmManager?.canScheduleExactAlarms() == true) {
+            val intent = Intent(context, NotificationReceiver::class.java).apply {
+                putExtra("task_id", taskId)
+                putExtra("task_title", taskTitle)
+            }
+
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                taskId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent)
+        } else {
+            Toast.makeText(context, "Brak uprawnień do ustawiania dokładnych alarmów. Włącz je w ustawieniach.", Toast.LENGTH_LONG).show()
+
+            val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+            context.startActivity(intent)
+        }
+    }
+
+
+    @RequiresApi(Build.VERSION_CODES.S)
     @OptIn(ExperimentalMaterial3Api::class)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+        }
+
         super.onCreate(savedInstanceState)
         val dbHelper = TaskDatabase(this)
 
@@ -29,6 +70,8 @@ class MainActivity : ComponentActivity() {
 
             var showMainMenu by remember { mutableStateOf(false) }
             var showCategoryMenu by remember { mutableStateOf(false) }
+
+            
 
             fun refreshTasks() {
                 tasks = dbHelper.getAllTasks().filter {
@@ -55,10 +98,20 @@ class MainActivity : ComponentActivity() {
                             category = category,
                             attachments = attachments
                         )
-                        dbHelper.insertTask(task)
+                        val id = dbHelper.insertTask(task)
                         showDialog = false
                         refreshTasks()
+
+                        if (notificationEnabled) {
+                            val minutesBefore = SettingsManager.getNotificationMinutes(this)
+                            val triggerTime = dueTime.time - minutesBefore * 60 * 1000
+
+                            if (triggerTime > System.currentTimeMillis()) {
+                                scheduleNotification(this, id.toInt(), title, triggerTime)
+                            }
+                        }
                     }
+
                 )
             }
 
@@ -75,7 +128,6 @@ class MainActivity : ComponentActivity() {
                 "1 dzień przed" to 1440,
                 "2 dni przed" to 2880
             )
-
 
             val currentNotificationMinutes = remember {
                 SettingsManager.getNotificationMinutes(context)
