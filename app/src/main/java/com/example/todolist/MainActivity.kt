@@ -65,6 +65,31 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
+            val context = this
+            val notificationOptions = listOf(
+                "1 minuta przed" to 1,
+                "5 minut przed" to 5,
+                "10 minut przed" to 10,
+                "30 minut przed" to 30,
+                "1 godzina przed" to 60,
+                "2 godziny przed" to 120,
+                "4 godziny przed" to 240,
+                "10 godzin przed" to 600,
+                "1 dzień przed" to 1440,
+                "2 dni przed" to 2880
+            )
+
+
+            val currentNotificationMinutes = remember {
+                SettingsManager.getNotificationMinutes(context)
+            }
+            var selectedNotificationLabel by remember {
+                mutableStateOf(
+                    notificationOptions.firstOrNull { it.second == currentNotificationMinutes }?.first ?: "10 minut przed"
+                )
+            }
+            var showNotificationMenu by remember { mutableStateOf(false) }
+
             val allCategories = remember(tasks) {
                 listOf("Wszystkie") + tasks.map { it.category }.distinct().filter { it.isNotBlank() }
             }
@@ -98,6 +123,13 @@ class MainActivity : ComponentActivity() {
                                             showMainMenu = false
                                         }
                                     )
+                                    DropdownMenuItem(
+                                        text = { Text("Czas powiadomień") },
+                                        onClick = {
+                                            showNotificationMenu = true
+                                            showMainMenu = false
+                                        }
+                                    )
                                 }
 
                                 DropdownMenu(
@@ -111,6 +143,22 @@ class MainActivity : ComponentActivity() {
                                                 selectedCategory = category
                                                 refreshTasks()
                                                 showCategoryMenu = false
+                                            }
+                                        )
+                                    }
+                                }
+                                DropdownMenu(
+                                    expanded = showNotificationMenu,
+                                    onDismissRequest = { showNotificationMenu = false }
+                                ) {
+                                    notificationOptions.forEach { (label, minutes) ->
+                                        DropdownMenuItem(
+                                            text = { Text(label) },
+                                            onClick = {
+                                                selectedNotificationLabel = label
+                                                SettingsManager.setNotificationMinutes(context, minutes)
+                                                showNotificationMenu = false
+                                                Toast.makeText(context, "Ustawiono: $label", Toast.LENGTH_SHORT).show()
                                             }
                                         )
                                     }
