@@ -21,7 +21,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.*
 import java.util.*
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
 import androidx.core.content.ContextCompat
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 
 enum class SortOption(val label: String) {
     DATE_ASC("Data rosnąco"),
@@ -87,6 +93,43 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf(SortOption.valueOf(SettingsManager.getSortOption(this)))
             }
 
+            val scrollState = rememberScrollState()
+
+            val context = this
+            val notificationOptions = listOf(
+                "1 minuta przed" to 1,
+                "5 minut przed" to 5,
+                "10 minut przed" to 10,
+                "30 minut przed" to 30,
+                "1 godzina przed" to 60,
+                "2 godziny przed" to 120,
+                "4 godziny przed" to 240,
+                "10 godzin przed" to 600,
+                "1 dzień przed" to 1440,
+                "2 dni przed" to 2880
+            )
+
+            val currentNotificationMinutes = remember {
+                SettingsManager.getNotificationMinutes(context)
+            }
+            var selectedNotificationLabel by remember {
+                mutableStateOf(
+                    notificationOptions.firstOrNull { it.second == currentNotificationMinutes }?.first ?: "10 minut przed"
+                )
+            }
+            var showNotificationMenu by remember { mutableStateOf(false) }
+
+            val allCategories = remember { mutableStateListOf<String>() }
+
+            LaunchedEffect(tasks) {
+                val categories = listOf("Wszystkie") + dbHelper.getAllTasks()
+                    .map { it.category }
+                    .distinct()
+                    .filter { it.isNotBlank() }
+                allCategories.clear()
+                allCategories.addAll(categories)
+            }
+
             fun refreshTasks() {
                 tasks = dbHelper.getAllTasks()
                     .filter {
@@ -101,6 +144,13 @@ class MainActivity : ComponentActivity() {
                             SortOption.TITLE_DESC -> compareByDescending { it.title.lowercase() }
                         }
                     )
+
+                val categories = listOf("Wszystkie") + dbHelper.getAllTasks()
+                    .map { it.category }
+                    .distinct()
+                    .filter { it.isNotBlank() }
+                allCategories.clear()
+                allCategories.addAll(categories)
             }
 
             LaunchedEffect(Unit) {
@@ -136,41 +186,6 @@ class MainActivity : ComponentActivity() {
                     }
 
                 )
-            }
-
-            val context = this
-            val notificationOptions = listOf(
-                "1 minuta przed" to 1,
-                "5 minut przed" to 5,
-                "10 minut przed" to 10,
-                "30 minut przed" to 30,
-                "1 godzina przed" to 60,
-                "2 godziny przed" to 120,
-                "4 godziny przed" to 240,
-                "10 godzin przed" to 600,
-                "1 dzień przed" to 1440,
-                "2 dni przed" to 2880
-            )
-
-            val currentNotificationMinutes = remember {
-                SettingsManager.getNotificationMinutes(context)
-            }
-            var selectedNotificationLabel by remember {
-                mutableStateOf(
-                    notificationOptions.firstOrNull { it.second == currentNotificationMinutes }?.first ?: "10 minut przed"
-                )
-            }
-            var showNotificationMenu by remember { mutableStateOf(false) }
-
-            val allCategories = remember { mutableStateListOf<String>() }
-
-            LaunchedEffect(tasks) {
-                val categories = listOf("Wszystkie") + dbHelper.getAllTasks()
-                    .map { it.category }
-                    .distinct()
-                    .filter { it.isNotBlank() }
-                allCategories.clear()
-                allCategories.addAll(categories)
             }
 
             Scaffold(
@@ -221,18 +236,24 @@ class MainActivity : ComponentActivity() {
 
                                 DropdownMenu(
                                     expanded = showCategoryMenu,
-                                    onDismissRequest = { showCategoryMenu = false }
+                                    onDismissRequest = { showCategoryMenu = false },
                                 ) {
-                                    allCategories.forEach { category ->
-                                        DropdownMenuItem(
-                                            text = { Text(category) },
-                                            onClick = {
-                                                selectedCategory = category
-                                                SettingsManager.setCategory(context, category)
-                                                refreshTasks()
-                                                showCategoryMenu = false
-                                            }
-                                        )
+                                    Column(
+                                        modifier = Modifier
+                                            .heightIn(max = 300.dp)
+                                            .verticalScroll(scrollState)
+                                    ) {
+                                        allCategories.forEach { category ->
+                                            DropdownMenuItem(
+                                                text = { Text(category) },
+                                                onClick = {
+                                                    selectedCategory = category
+                                                    SettingsManager.setCategory(context, category)
+                                                    refreshTasks()
+                                                    showCategoryMenu = false
+                                                }
+                                            )
+                                        }
                                     }
                                 }
                                 DropdownMenu(
