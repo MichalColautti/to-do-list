@@ -30,6 +30,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.platform.LocalFocusManager
 
 enum class SortOption(val label: String) {
     DATE_ASC("Data rosnąco"),
@@ -144,6 +147,8 @@ class MainActivity : ComponentActivity() {
             var showTaskDetails by remember { mutableStateOf(false) }
 
             var searchQuery by remember { mutableStateOf("") }
+
+            val focusManager = LocalFocusManager.current
 
             LaunchedEffect(tasks) {
                 val categories = listOf("Wszystkie") + dbHelper.getAllTasks()
@@ -323,7 +328,14 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             ) {
-                Column {
+                Column (
+                    modifier = Modifier
+                        .pointerInput(Unit) {
+                            detectTapGestures(onTap = {
+                                focusManager.clearFocus()
+                            })
+                        }
+                ){
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = {
@@ -333,7 +345,7 @@ class MainActivity : ComponentActivity() {
                         label = { Text("Szukaj zadań") },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp, top = 80.dp, end = 18.dp),
+                            .padding(16.dp, top = 88.dp, end = 18.dp),
                         singleLine = true
                     )
                     if (showTaskDetails && selectedTask != null) {
@@ -375,8 +387,9 @@ class MainActivity : ComponentActivity() {
                     else {
                         TaskScreen(
                             tasks = tasks,
-                            onDelete = { taskId ->
-                                dbHelper.deleteTask(taskId)
+                            onDelete = { task ->
+                                cancelNotification(context, task.id)
+                                dbHelper.deleteTask(task.id)
                                 refreshTasks()
                             },
                             onToggleComplete = { task ->

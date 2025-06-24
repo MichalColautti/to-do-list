@@ -8,7 +8,7 @@ import java.util.Date
 import androidx.core.database.sqlite.transaction
 
 class TaskDatabase(context: Context) :
-    SQLiteOpenHelper(context, "tasks.db", null, 7) {
+    SQLiteOpenHelper(context, "tasks.db", null, 8) {
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL("""

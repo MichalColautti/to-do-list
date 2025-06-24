@@ -39,7 +39,7 @@ fun openAttachment(context: Context, attachment: TaskAttachment) {
 @Composable
 fun TaskScreen(
     tasks: List<Task>,
-    onDelete: (Int) -> Unit,
+    onDelete: (Task) -> Unit,
     onToggleComplete: (Task) -> Unit,
     showCompleted: Boolean,
     onToggleShowCompleted: () -> Unit,
@@ -108,7 +108,7 @@ fun TaskScreen(
                                         )
                                     }
                                 }
-                                IconButton(onClick = { onDelete(task.id) }) {
+                                IconButton(onClick = { onDelete(task) }) {
                                     Icon(Icons.Default.Delete, contentDescription = "Usuń")
                                 }
                             }
