@@ -25,7 +25,9 @@ import java.util.Locale
 fun TaskDetailsScreen(
     task: Task,
     onDismiss: () -> Unit,
-    onSave: (Task) -> Unit
+    onSave: (Task) -> Unit,
+    onCancelNotification: (Int) -> Unit,
+    onRequestSchedule: (Int, String, Long) -> Unit
 ) {
     var title by remember { mutableStateOf(task.title) }
     var description by remember { mutableStateOf(task.description) }
@@ -154,6 +156,15 @@ fun TaskDetailsScreen(
                         dateFormat.parse(dueTime) ?: task.dueTime
                     } catch (_: Exception) {
                         task.dueTime
+                    }
+
+                    val wasNotificationEnabled = task.notificationEnabled
+                    val isNotificationEnabledNow = notificationEnabled
+
+                    if (wasNotificationEnabled && !isNotificationEnabledNow) {
+                        onCancelNotification(task.id)
+                    } else if (!wasNotificationEnabled && isNotificationEnabledNow) {
+                        onRequestSchedule(task.id, title.trim(), dateFormat.parse(dueTime)?.time ?: task.dueTime.time)
                     }
 
                     onSave(

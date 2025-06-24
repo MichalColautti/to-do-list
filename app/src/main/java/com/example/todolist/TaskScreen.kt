@@ -58,34 +58,6 @@ fun TaskScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Moje Zadania") },
-                actions = {
-                    Box {
-                        IconButton(onClick = { expanded = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "Menu")
-                        }
-                        DropdownMenu(
-                            expanded = expanded,
-                            onDismissRequest = { expanded = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(if (showCompleted) "Ukryj zakończone" else "Pokaż zakończone") },
-                                onClick = {
-                                    onToggleShowCompleted()
-                                    expanded = false
-                                }
-                            )
-                            availableCategories.forEach { category ->
-                                DropdownMenuItem(
-                                    text = { Text(category) },
-                                    onClick = {
-                                        onCategorySelected(category)
-                                        expanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
-                }
             )
         }
     ) { paddingValues ->

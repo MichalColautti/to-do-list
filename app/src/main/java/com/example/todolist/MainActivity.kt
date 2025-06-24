@@ -22,7 +22,9 @@ import androidx.compose.runtime.*
 import java.util.*
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
 import androidx.core.content.ContextCompat
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.rememberScrollState
@@ -60,6 +62,23 @@ class MainActivity : ComponentActivity() {
 
             val intent = Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
             context.startActivity(intent)
+        }
+    }
+
+    private fun cancelNotification(context: Context, taskId: Int) {
+        val alarmManager = ContextCompat.getSystemService(context, AlarmManager::class.java)
+        val intent = Intent(context, NotificationReceiver::class.java)
+
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            taskId,
+            intent,
+            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        if (pendingIntent != null) {
+            alarmManager?.cancel(pendingIntent)
+            pendingIntent.cancel()
         }
     }
 
@@ -124,6 +143,8 @@ class MainActivity : ComponentActivity() {
             var selectedTask by remember { mutableStateOf<Task?>(null) }
             var showTaskDetails by remember { mutableStateOf(false) }
 
+            var searchQuery by remember { mutableStateOf("") }
+
             LaunchedEffect(tasks) {
                 val categories = listOf("Wszystkie") + dbHelper.getAllTasks()
                     .map { it.category }
@@ -137,7 +158,8 @@ class MainActivity : ComponentActivity() {
                 tasks = dbHelper.getAllTasks()
                     .filter {
                         (!hideCompleted || !it.isCompleted) &&
-                                (selectedCategory == "Wszystkie" || it.category == selectedCategory)
+                                (selectedCategory == "Wszystkie" || it.category == selectedCategory) &&
+                                (searchQuery.isBlank() || it.title.contains(searchQuery, ignoreCase = true) || it.description.contains(searchQuery, ignoreCase = true))
                     }
                     .sortedWith(
                         when (selectedSortOption) {
@@ -301,59 +323,84 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             ) {
-                if (showTaskDetails && selectedTask != null) {
-                    TaskDetailsScreen(
-                        task = selectedTask!!,
-                        onDismiss = { showTaskDetails = false },
-                        onSave = { updatedTask ->
-                            dbHelper.updateTask(updatedTask)
+                Column {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = {
+                            searchQuery = it
                             refreshTasks()
-                            showTaskDetails = false
+                        },
+                        label = { Text("Szukaj zadań") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp, top = 80.dp, end = 18.dp),
+                        singleLine = true
+                    )
+                    if (showTaskDetails && selectedTask != null) {
+                        TaskDetailsScreen(
+                            task = selectedTask!!,
+                            onDismiss = { showTaskDetails = false },
+                            onSave = { updatedTask ->
+                                dbHelper.updateTask(updatedTask)
+                                refreshTasks()
+                                showTaskDetails = false
 
-                            if (updatedTask.notificationEnabled) {
-                                val minutesBefore = SettingsManager.getNotificationMinutes(this)
-                                val triggerTime = updatedTask.dueTime.time - minutesBefore * 60 * 1000
+                                cancelNotification(context, updatedTask.id)
 
-                                if (triggerTime > System.currentTimeMillis()) {
-                                    scheduleNotification(
-                                        this,
-                                        updatedTask.id.toInt(),
-                                        updatedTask.title,
-                                        triggerTime
-                                    )
+                                if (updatedTask.notificationEnabled) {
+                                    val minutesBefore = SettingsManager.getNotificationMinutes(context)
+                                    val triggerTime = updatedTask.dueTime.time - minutesBefore * 60 * 1000
+
+                                    if (triggerTime > System.currentTimeMillis()) {
+                                        scheduleNotification(
+                                            context,
+                                            updatedTask.id.toInt(),
+                                            updatedTask.title,
+                                            triggerTime
+                                        )
+                                    }
+                                }
+                            },
+                            onCancelNotification = { cancelNotification(context, it) },
+                            onRequestSchedule = { id, title, triggerTime ->
+                                val minutesBefore = SettingsManager.getNotificationMinutes(context)
+                                val adjustedTriggerTime = triggerTime - minutesBefore * 60 * 1000
+
+                                if (adjustedTriggerTime > System.currentTimeMillis()) {
+                                    scheduleNotification(context, id, title, adjustedTriggerTime)
                                 }
                             }
-                        }
-                    )
-                }
-                else {
-                    TaskScreen(
-                        tasks = tasks,
-                        onDelete = { taskId ->
-                            dbHelper.deleteTask(taskId)
-                            refreshTasks()
-                        },
-                        onToggleComplete = { task ->
-                            dbHelper.updateTaskCompletion(task.id, !task.isCompleted)
-                            refreshTasks()
-                        },
-                        onTaskClick = { task ->
-                            selectedTask = task
-                            showTaskDetails = true
-                        },
-                        showCompleted = !hideCompleted,
-                        onToggleShowCompleted = {
-                            hideCompleted = !hideCompleted
-                            refreshTasks()
-                        },
-                        selectedCategory = selectedCategory,
-                        onCategorySelected = { category ->
-                            if (category != null) {
-                                selectedCategory = category
-                            }
-                            refreshTasks()
-                        },
-                    )
+                        )
+                    }
+                    else {
+                        TaskScreen(
+                            tasks = tasks,
+                            onDelete = { taskId ->
+                                dbHelper.deleteTask(taskId)
+                                refreshTasks()
+                            },
+                            onToggleComplete = { task ->
+                                dbHelper.updateTaskCompletion(task.id, !task.isCompleted)
+                                refreshTasks()
+                            },
+                            onTaskClick = { task ->
+                                selectedTask = task
+                                showTaskDetails = true
+                            },
+                            showCompleted = !hideCompleted,
+                            onToggleShowCompleted = {
+                                hideCompleted = !hideCompleted
+                                refreshTasks()
+                            },
+                            selectedCategory = selectedCategory,
+                            onCategorySelected = { category ->
+                                if (category != null) {
+                                    selectedCategory = category
+                                }
+                                refreshTasks()
+                            },
+                        )
+                    }
                 }
             }
         }
