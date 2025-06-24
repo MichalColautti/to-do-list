@@ -1,23 +1,20 @@
 package com.example.todolist
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import android.content.Intent
 import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
-import android.content.Intent
-import android.provider.OpenableColumns
-import androidx.compose.foundation.lazy.LazyColumn
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -59,8 +56,10 @@ fun TaskDetailsScreen(
                         }
                     } ?: it.lastPathSegment ?: "Załącznik"
 
-                    if (attachments.none { att -> att.uri == it }) {
-                        attachments.add(TaskAttachment(uri = it, name = name))
+                    val copiedUri = AttachmentManager.copyAttachmentToAppStorage(context, it, name)
+
+                    if (copiedUri != null && attachments.none { att -> att.uri == copiedUri }) {
+                        attachments.add(TaskAttachment(uri = copiedUri, name = name))
                     }
                 } catch (e: SecurityException) {
                     e.printStackTrace()

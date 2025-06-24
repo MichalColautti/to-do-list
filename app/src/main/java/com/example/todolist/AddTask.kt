@@ -65,8 +65,10 @@ fun AddTask(
                         }
                     } ?: it.lastPathSegment ?: "Załącznik"
 
-                    if (attachments.none { att -> att.uri == it }) {
-                        attachments = attachments + TaskAttachment(uri = it, name = name)
+                    val copiedUri = AttachmentManager.copyAttachmentToAppStorage(context, it, name)
+
+                    if (copiedUri != null && attachments.none { att -> att.uri == copiedUri }) {
+                        attachments = attachments + TaskAttachment(uri = copiedUri, name = name)
                     }
                 } catch (e: SecurityException) {
                     e.printStackTrace()

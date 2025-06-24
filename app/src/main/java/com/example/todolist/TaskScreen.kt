@@ -18,20 +18,34 @@ import java.text.SimpleDateFormat
 import java.util.*
 import android.content.Intent
 import android.content.ActivityNotFoundException
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
+import java.io.File
+import android.util.Log
+import android.webkit.MimeTypeMap
 
-fun openAttachment(context: Context, attachment: TaskAttachment) {
-    val intent = Intent(Intent.ACTION_VIEW).apply {
-        setDataAndType(attachment.uri, context.contentResolver.getType(attachment.uri))
-        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
-
+fun openAttachment(context: Context, file: File) {
     try {
-        context.startActivity(intent)
-    } catch (_: ActivityNotFoundException) {
-        Toast.makeText(context, "Brak aplikacji do otwarcia pliku", Toast.LENGTH_SHORT).show()
+        val uri = FileProvider.getUriForFile(
+            context,
+            context.packageName + ".fileprovider",
+            file
+        )
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, context.contentResolver.getType(uri))
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+        if (intent.resolveActivity(context.packageManager) != null) {
+            context.startActivity(intent)
+        } else {
+            Toast.makeText(context, "Brak aplikacji do otwarcia tego pliku", Toast.LENGTH_SHORT).show()
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        Toast.makeText(context, "Nie można otworzyć załącznika", Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -168,7 +182,8 @@ fun TaskScreen(
                                 TextButton(
                                     modifier = Modifier.fillMaxWidth(),
                                     onClick = {
-                                        openAttachment(context,attachment)
+                                        val file = File(attachment.uri.path ?: "")
+                                        openAttachment(context,file)
                                         taskAttachments = null
                                     }
                                 ) {

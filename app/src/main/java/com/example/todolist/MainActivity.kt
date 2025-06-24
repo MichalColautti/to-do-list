@@ -361,10 +361,14 @@ class MainActivity : ComponentActivity() {
                     if (showTaskDetails && selectedTask != null) {
                         TaskDetailsScreen(
                             task = selectedTask!!,
-                            onDismiss = { showTaskDetails = false },
+                            onDismiss = {
+                                showTaskDetails = false
+                                AttachmentManager.deleteUnusedAttachments(context, dbHelper.getAllTasks())
+                            },
                             onSave = { updatedTask ->
                                 dbHelper.updateTask(updatedTask)
                                 refreshTasks()
+                                AttachmentManager.deleteUnusedAttachments(context, dbHelper.getAllTasks())
                                 showTaskDetails = false
 
                                 cancelNotification(context, updatedTask.id)
@@ -401,6 +405,7 @@ class MainActivity : ComponentActivity() {
                                 cancelNotification(context, task.id)
                                 dbHelper.deleteTask(task.id)
                                 refreshTasks()
+                                AttachmentManager.deleteUnusedAttachments(context, dbHelper.getAllTasks())
                             },
                             onToggleComplete = { task ->
                                 dbHelper.updateTaskCompletion(task.id, !task.isCompleted)
