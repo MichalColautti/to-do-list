@@ -166,4 +166,18 @@ class TaskDatabase(context: Context) :
         }
     }
 
+    fun getTaskById(id: Int): Task? {
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM tasks WHERE id = ?", arrayOf(id.toString()))
+        return if (cursor.moveToFirst()) {
+            val task = Task.fromCursor(cursor).copy(
+                attachments = getAttachmentsForTask(id)
+            )
+            cursor.close()
+            task
+        } else {
+            cursor.close()
+            null
+        }
+    }
 }

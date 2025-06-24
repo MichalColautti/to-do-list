@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
             val intent = Intent(context, NotificationReceiver::class.java).apply {
                 putExtra("task_id", taskId)
                 putExtra("task_title", taskTitle)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
 
             val pendingIntent = PendingIntent.getBroadcast(
@@ -185,6 +186,15 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(Unit) {
                 refreshTasks()
+
+                val taskIdFromNotification = intent?.getIntExtra("task_id", -1) ?: -1
+                if (taskIdFromNotification != -1) {
+                    val task = dbHelper.getTaskById(taskIdFromNotification)
+                    if (task != null) {
+                        selectedTask = task
+                        showTaskDetails = true
+                    }
+                }
             }
 
             if (showDialog) {

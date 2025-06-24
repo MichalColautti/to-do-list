@@ -12,7 +12,7 @@ import androidx.core.app.NotificationCompat
 class NotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val taskTitle = intent.getStringExtra("task_title") ?: "Zadanie"
-        val taskId = intent.getIntExtra("task_id", 0)
+        val taskId = intent.getIntExtra("task_id", -1)
 
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val channelId = "task_reminder_channel"
@@ -22,10 +22,15 @@ class NotificationReceiver : BroadcastReceiver() {
             notificationManager.createNotificationChannel(channel)
         }
 
+        val openIntent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("task_id", taskId)
+        }
+
         val pendingIntent = PendingIntent.getActivity(
             context,
             taskId,
-            Intent(context, MainActivity::class.java),
+            openIntent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
